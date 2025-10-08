@@ -1,0 +1,9 @@
+class Constants:
+    APP_NAME = "Задача №4 симуляция"
+    DEFAULT_WINDOW_WIDTH = 1400
+    DEFAULT_WINDOW_HEIGHT = 1050
+    SETTINGS_PANEL_WIDTH = 200
+    GRID_MIN_SIZE = 400
+    DEFAULT_GRID_SIZE = 10
+    MIN_GRID_SIZE = 1
+    MAX_GRID_SIZE = 100
