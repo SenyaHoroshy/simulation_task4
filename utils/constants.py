@@ -6,4 +6,4 @@ class Constants:
     GRID_MIN_SIZE = 400
     DEFAULT_GRID_SIZE = 10
     MIN_GRID_SIZE = 1
-    MAX_GRID_SIZE = 100
+    MAX_GRID_SIZE = 999
