@@ -33,7 +33,14 @@ class MainWindow(QMainWindow):
         self.settings_panel.apply_button.clicked.connect(self.apply_settings)
         
     def apply_settings(self):
-        grid_size = self.settings_panel.get_grid_size()
-        selected_task = self.settings_panel.get_selected_task()
+        self.settings_panel.apply_settings()
+        
+        grid_size = self.settings_panel.current_grid_size
+        selected_task = self.settings_panel.current_task
+        variables = self.settings_panel.get_variables()
+        
         self.grid_widget.set_grid_size(grid_size)
         self.grid_widget.set_task(selected_task)
+        self.grid_widget.set_variables(variables)
+
+        self.settings_panel.update_input_visibility()

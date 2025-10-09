@@ -9,6 +9,7 @@ class GridWidget(QWidget):
         super().__init__()
         self.grid_size = grid_size
         self.current_task = "1a"
+        self.variables = {"s": 1, "t": 1}
         self.setMinimumSize(Constants.GRID_MIN_SIZE, Constants.GRID_MIN_SIZE)
         self.hover_cell = None
         self.coords_label = None
@@ -38,6 +39,10 @@ class GridWidget(QWidget):
         self.current_task = task
         self.update()
         
+    def set_variables(self, variables):
+        self.variables = variables
+        self.update()
+        
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
@@ -48,7 +53,7 @@ class GridWidget(QWidget):
         cell_width = width / self.grid_size
         cell_height = height / self.grid_size
 
-        if self.current_task in ["1a", "1b", "1c"]:
+        if self.current_task in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
             # TODO: Добавить зоны для разных вариантов задач
@@ -59,7 +64,7 @@ class GridWidget(QWidget):
             painter.setPen(QPen(Qt.black, 2))
             painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
         
-        if self.hover_cell is not None and self.current_task in ["1a", "1b", "1c"]:
+        if self.hover_cell is not None and self.current_task in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
             row, col = self.hover_cell
             x = col * cell_width
             y = row * cell_height
@@ -87,9 +92,18 @@ class GridWidget(QWidget):
         elif self.current_task == "1c":
             
             pass
+        if self.current_task == "4.1a":
+            
+            pass
+        elif self.current_task == "4.1b":
+            
+            pass
+        elif self.current_task == "4.1c":
+            
+            pass
     
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self.current_task not in ["1a", "1b", "1c"]:
+        if self.current_task not in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
             self.hover_cell = None
             self.coords_label.hide()
             return
