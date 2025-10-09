@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, 
-                               QSpinBox, QLabel)
+                               QSpinBox, QLabel, QComboBox)
 from PySide6.QtCore import Qt
 from utils.constants import Constants
 
@@ -21,6 +21,13 @@ class SettingsPanel(QWidget):
         layout.addWidget(title)
         
         layout.addSpacing(20)
+        
+        layout.addWidget(QLabel("Выбор пункта:"))
+        self.task_combo = QComboBox()
+        self.task_combo.addItems(["1a", "1b", "1c", "2a", "3a", "3b", "4.1a", "4.1b", "4.1c", "4.2a", "4.3a", "4.3b"])
+        layout.addWidget(self.task_combo)
+        
+        layout.addSpacing(10)
         
         layout.addWidget(QLabel("Размер сетки (n x n):"))
         self.grid_size_input = QSpinBox()
@@ -51,3 +58,6 @@ class SettingsPanel(QWidget):
     
     def get_grid_size(self):
         return self.grid_size_input.value()
+    
+    def get_selected_task(self):
+        return self.task_combo.currentText()

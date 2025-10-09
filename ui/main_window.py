@@ -34,4 +34,6 @@ class MainWindow(QMainWindow):
         
     def apply_settings(self):
         grid_size = self.settings_panel.get_grid_size()
+        selected_task = self.settings_panel.get_selected_task()
         self.grid_widget.set_grid_size(grid_size)
+        self.grid_widget.set_task(selected_task)
