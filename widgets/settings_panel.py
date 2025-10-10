@@ -1,10 +1,12 @@
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QPushButton, 
                                QSpinBox, QLabel, QComboBox, QHBoxLayout)
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from utils.constants import Constants
 
 
 class SettingsPanel(QWidget):
+    task_changed = Signal()
+
     def __init__(self):
         super().__init__()
         self.setFixedWidth(Constants.SETTINGS_PANEL_WIDTH)
@@ -28,6 +30,7 @@ class SettingsPanel(QWidget):
         layout.addWidget(QLabel("Выбор пункта:"))
         self.task_combo = QComboBox()
         self.task_combo.addItems(["1a", "1b", "1c", "2a", "3a", "3b", "4.1a", "4.1b", "4.1c", "4.2a", "4.3a", "4.3b"])
+        self.task_combo.currentTextChanged.connect(self.on_task_changed)
         layout.addWidget(self.task_combo)
         
         layout.addSpacing(10)
@@ -99,6 +102,9 @@ class SettingsPanel(QWidget):
             }
         """)
         layout.addWidget(self.apply_button)
+
+        self.counter_widget = QLabel(f"Количество фигур: {0}")
+        layout.addWidget(self.counter_widget)
         
         layout.addStretch()
         
@@ -121,28 +127,31 @@ class SettingsPanel(QWidget):
         if task in ["1a", "4.1a"]:
             self.s_widget.setVisible(False)
             self.t_widget.setVisible(False)
-        elif task in ["1b", "4.1b"]:
-            self.s_widget.setVisible(True)
-            self.t_widget.setVisible(True)
-        elif task in ["1c", "4.1c"]:
-            self.s_widget.setVisible(True)
-            self.t_widget.setVisible(False)
-        else:
-            self.s_widget.setVisible(False)
-            self.t_widget.setVisible(False)
+        #elif task in ["1b", "4.1b"]:
+            #self.s_widget.setVisible(True)
+            #self.t_widget.setVisible(True)
+        #elif task in ["1c", "4.1c"]:
+            #self.s_widget.setVisible(True)
+            #self.t_widget.setVisible(False)
+        #else:
+            #self.s_widget.setVisible(False)
+            #self.t_widget.setVisible(False)
     
     def update_parameters_display(self):
         if self.current_task in ["1a", "4.1a"]:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
-        elif self.current_task in ["1b", "4.1b"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
-        elif self.current_task in ["1c", "4.1c"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
+        #elif self.current_task in ["1b", "4.1b"]:
+            #parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
+        #elif self.current_task in ["1c", "4.1c"]:
+            #parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
         else:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
         
         self.parameters_label.setText(parameters_text)
     
+    def update_counter_display(self, counter):
+        self.counter_widget.setText(f"Количество фигур: {counter}")
+
     def apply_settings(self):
         self.current_task = self.get_selected_task()
         self.current_grid_size = self.get_grid_size()
@@ -150,15 +159,18 @@ class SettingsPanel(QWidget):
         if self.current_task in ["1a", "4.1a"]:
             self.current_variables["s"] = 1
             self.current_variables["t"] = 1
-        elif self.current_task in ["1b", "4.1b"]:
-            self.current_variables["s"] = self.s_input.value()
-            self.current_variables["t"] = self.t_input.value()
-        elif self.current_task in ["1c", "4.1c"]:
-            self.current_variables["s"] = self.s_input.value()
-            self.current_variables["t"] = 1
+        #elif self.current_task in ["1b", "4.1b"]:
+            #self.current_variables["s"] = self.s_input.value()
+            #self.current_variables["t"] = self.t_input.value()
+        #elif self.current_task in ["1c", "4.1c"]:
+            #self.current_variables["s"] = self.s_input.value()
+            #self.current_variables["t"] = 1
         else:
             self.current_variables = {"s": 1, "t": 1}
         
         self.update_input_visibility()
         
         self.update_parameters_display()
+
+    def on_task_changed(self):
+        self.task_changed.emit()

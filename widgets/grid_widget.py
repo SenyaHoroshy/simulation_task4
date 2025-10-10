@@ -1,10 +1,13 @@
 from PySide6.QtWidgets import QWidget, QLabel
 from PySide6.QtGui import QPainter, QPen, QMouseEvent, QBrush, QColor
-from PySide6.QtCore import Qt, QPoint
+from PySide6.QtCore import Qt, QPoint, Signal
 from utils.constants import Constants
+from utils.figure_manager import FigureManager
 
 
 class GridWidget(QWidget):
+    figures_count_changed = Signal(int)
+    
     def __init__(self, grid_size=Constants.DEFAULT_GRID_SIZE):
         super().__init__()
         self.grid_size = grid_size
@@ -13,8 +16,13 @@ class GridWidget(QWidget):
         self.setMinimumSize(Constants.GRID_MIN_SIZE, Constants.GRID_MIN_SIZE)
         self.hover_cell = None
         self.coords_label = None
+        self.placed_figures = []
+        self.forbidden_zones = []
+        self.current_figure = self.get_figure_shape()
+        self.current_rotation = 0
         self.setup_coords_label()
         self.setMouseTracking(True)
+        self.setFocusPolicy(Qt.StrongFocus)
         
     def setup_coords_label(self):
         self.coords_label = QLabel(self)
@@ -33,15 +41,128 @@ class GridWidget(QWidget):
         self.grid_size = size
         self.hover_cell = None
         self.coords_label.hide()
+        self.placed_figures = []
+        self.forbidden_zones = []
+        self.current_rotation = 0
+        self.update_current_figure()
+        self.update_figures_count()
         self.update()
         
     def set_task(self, task):
         self.current_task = task
+        self.placed_figures = []
+        self.forbidden_zones = []
+        self.current_rotation = 0
+        self.update_current_figure()
+        self.update_figures_count()
         self.update()
         
     def set_variables(self, variables):
         self.variables = variables
         self.update()
+    
+    def get_figure_shape(self):
+        return FigureManager.get_figure_shapes()["corner"]
+    
+    def update_current_figure(self):
+        base_figure = self.get_figure_shape()
+        self.current_figure = FigureManager.rotate_figure(base_figure, self.current_rotation)
+    
+    def rotate_figure(self):
+        self.current_rotation = (self.current_rotation + 1) % 4
+        self.update_current_figure()
+        self.update()
+    
+    def get_figure_cells(self, base_row, base_col):
+        cells = []
+        for dr, dc in self.current_figure:
+            new_row = base_row + dr
+            new_col = base_col + dc
+            if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                cells.append((new_row, new_col))
+        return cells
+    
+    def get_forbidden_zone_cells(self, figure_cells):
+        forbidden_cells = set()
+        
+        for row, col in figure_cells:
+            if self.current_task in ["1a", "1b", "1c"]:
+                for dr in [-1, 0, 1]:
+                    for dc in [-1, 0, 1]:
+                        if dr == 0 and dc == 0:
+                            continue
+                        new_row, new_col = row + dr, col + dc
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.add((new_row, new_col))
+            
+            elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
+                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                    new_row, new_col = row + dr, col + dc
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.add((new_row, new_col))
+        
+        forbidden_cells = forbidden_cells - set(figure_cells)
+        
+        return list(forbidden_cells)
+    
+    def can_place_figure(self, row, col):
+        cells = self.get_figure_cells(row, col)
+        
+        if len(cells) != len(self.current_figure):
+            return False
+        
+        for cell in cells:
+            for figure in self.placed_figures:
+                if cell in figure:
+                    return False
+        
+        for cell in cells:
+            if cell in self.forbidden_zones:
+                return False
+        
+        return True
+    
+    def place_figure(self, row, col):
+        if self.can_place_figure(row, col):
+            cells = self.get_figure_cells(row, col)
+            self.placed_figures.append(cells)
+            
+            forbidden_cells = self.get_forbidden_zone_cells(cells)
+            self.forbidden_zones.extend(forbidden_cells)
+            
+            self.update_figures_count()
+            self.update()
+            return True
+        return False
+    
+    def remove_figure_at(self, row, col):
+        for i, figure in enumerate(self.placed_figures):
+            if (row, col) in figure:
+                removed_figure = self.placed_figures.pop(i)
+                
+                self.update_all_forbidden_zones()
+                
+                self.update_figures_count()
+                self.update()
+                return True
+        return False
+    
+    def update_all_forbidden_zones(self):
+        self.forbidden_zones = []
+        for figure in self.placed_figures:
+            forbidden_cells = self.get_forbidden_zone_cells(figure)
+            self.forbidden_zones.extend(forbidden_cells)
+    
+    def update_figures_count(self):
+        """Обновляет счетчик фигур и отправляет сигнал"""
+        count = len(self.placed_figures)
+        self.figures_count_changed.emit(count)
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_R:
+            self.rotate_figure()
+        else:
+            super().keyPressEvent(event)
         
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -53,19 +174,41 @@ class GridWidget(QWidget):
         cell_width = width / self.grid_size
         cell_height = height / self.grid_size
 
-        if self.current_task in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
+        if self.current_task in ["1a", "4.1a"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
-            # TODO: Добавить зоны для разных вариантов задач
-            # Здесь будет код для отрисовки специальных зон в зависимости от текущей задачи
+            for zone_cell in self.forbidden_zones:
+                row, col = zone_cell
+                x = col * cell_width
+                y = row * cell_height
+                painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
+                               QBrush(QColor(255, 0, 0, 80)))
             
-        elif self.current_task in ["2a", "4.1a", "4.1b", "4.1c", "4.2a", "3a", "3b", "4.3a", "4.3b"]:
+            for figure in self.placed_figures:
+                for row, col in figure:
+                    x = col * cell_width
+                    y = row * cell_height
+                    painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
+                                   QBrush(QColor(0, 0, 255, 180)))
+        
+        if self.current_task in ["1a", "4.1a"]:
+            if self.hover_cell is not None and self.can_place_figure(*self.hover_cell):
+                row, col = self.hover_cell
+                cells = self.get_figure_cells(row, col)
+                for r, c in cells:
+                    x = c * cell_width
+                    y = r * cell_height
+                    painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
+                                   QBrush(QColor(255, 0, 0, 120)))
+            
+        elif self.current_task in ["1b", "1c", "2a", "4.1b", "4.1c", "4.2a", "3a", "3b", "4.3a", "4.3b"]:
             painter.fillRect(0, 0, width, height, QBrush(QColor(240, 240, 240)))
             painter.setPen(QPen(Qt.black, 2))
             painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
         
-        if self.hover_cell is not None and self.current_task in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
+        if self.hover_cell is not None and self.current_task in ["1a", "4.1a"]:
             row, col = self.hover_cell
+            
             x = col * cell_width
             y = row * cell_height
             
@@ -82,28 +225,9 @@ class GridWidget(QWidget):
         for i in range(self.grid_size + 1):
             y = i * cell_height
             painter.drawLine(0, int(y), width, int(y))
-        
-        if self.current_task == "1a":
-            
-            pass
-        elif self.current_task == "1b":
-            
-            pass
-        elif self.current_task == "1c":
-            
-            pass
-        if self.current_task == "4.1a":
-            
-            pass
-        elif self.current_task == "4.1b":
-            
-            pass
-        elif self.current_task == "4.1c":
-            
-            pass
     
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self.current_task not in ["1a", "1b", "1c", "4.1a", "4.1b", "4.1c"]:
+        if self.current_task not in ["1a", "4.1a"]:
             self.hover_cell = None
             self.coords_label.hide()
             return
@@ -141,6 +265,22 @@ class GridWidget(QWidget):
             self.coords_label.hide()
         
         self.update()
+    
+    def mousePressEvent(self, event: QMouseEvent):
+        if self.current_task in ["1a", "4.1a"]:
+            if event.button() == Qt.LeftButton and self.hover_cell is not None:
+                row, col = self.hover_cell
+                
+                figure_exists = False
+                for figure in self.placed_figures:
+                    if (row, col) in figure:
+                        figure_exists = True
+                        break
+                
+                if figure_exists:
+                    self.remove_figure_at(row, col)
+                else:
+                    self.place_figure(row, col)
     
     def leaveEvent(self, event):
         self.hover_cell = None

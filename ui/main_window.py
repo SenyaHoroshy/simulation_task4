@@ -31,6 +31,8 @@ class MainWindow(QMainWindow):
         
     def connect_signals(self):
         self.settings_panel.apply_button.clicked.connect(self.apply_settings)
+        self.settings_panel.task_changed.connect(self.on_task_changed)
+        self.grid_widget.figures_count_changed.connect(self.settings_panel.update_counter_display)
         
     def apply_settings(self):
         self.settings_panel.apply_settings()
@@ -43,4 +45,7 @@ class MainWindow(QMainWindow):
         self.grid_widget.set_task(selected_task)
         self.grid_widget.set_variables(variables)
 
+        self.settings_panel.update_input_visibility()
+    
+    def on_task_changed(self):
         self.settings_panel.update_input_visibility()
