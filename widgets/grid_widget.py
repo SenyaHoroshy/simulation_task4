@@ -154,7 +154,6 @@ class GridWidget(QWidget):
             self.forbidden_zones.extend(forbidden_cells)
     
     def update_figures_count(self):
-        """Обновляет счетчик фигур и отправляет сигнал"""
         count = len(self.placed_figures)
         self.figures_count_changed.emit(count)
     

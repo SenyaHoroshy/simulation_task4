@@ -3,6 +3,7 @@ venv/
 env/
 myenv/
 ENV/
+saves/
 *.venv
 
 # Python cache
