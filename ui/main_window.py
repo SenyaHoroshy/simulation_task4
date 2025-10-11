@@ -111,11 +111,19 @@ class MainWindow(QMainWindow):
                     if field not in data:
                         raise ValueError(f'Отсутствует обязательное поле: {field}')
                 
+
+                def convert_figures(figures_data):
+                    converted_figures = []
+                    for figure in figures_data:
+                        converted_figure = tuple(tuple(cell) for cell in figure)
+                        converted_figures.append(converted_figure)
+                    return converted_figures
+                
                 self.grid_widget.grid_size = data['grid_size']
                 self.grid_widget.current_task = data['current_task']
                 self.grid_widget.variables = data['variables']
-                self.grid_widget.placed_figures = data['placed_figures']
-                self.grid_widget.forbidden_zones = data['forbidden_zones']
+                self.grid_widget.placed_figures = convert_figures(data['placed_figures'])
+                self.grid_widget.forbidden_zones = [tuple(cell) for cell in data['forbidden_zones']]
                 self.grid_widget.current_rotation = data['current_rotation']
                 
                 self.settings_panel.task_combo.setCurrentText(data['current_task'])
