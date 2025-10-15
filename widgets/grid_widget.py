@@ -59,9 +59,19 @@ class GridWidget(QWidget):
         
     def set_variables(self, variables):
         self.variables = variables
+        self.update_current_figure()
         self.update()
     
     def get_figure_shape(self):
+        if self.current_task in ["1a", "4.1a"]:
+            return FigureManager.get_figure_shapes()["corner"]
+        elif self.current_task in ["1b", "4.1b"]:
+            s, t = self.variables["s"], self.variables["t"]
+            rectangle = []
+            for i in range(s):
+                for j in range(t):
+                    rectangle.append((i, j))
+            return rectangle
         return FigureManager.get_figure_shapes()["corner"]
     
     def update_current_figure(self):
@@ -85,8 +95,8 @@ class GridWidget(QWidget):
     def get_forbidden_zone_cells(self, figure_cells):
         forbidden_cells = set()
         
-        for row, col in figure_cells:
-            if self.current_task in ["1a", "1b", "1c"]:
+        if self.current_task in ["1a", "1b", "1c"]:
+            for row, col in figure_cells:
                 for dr in [-1, 0, 1]:
                     for dc in [-1, 0, 1]:
                         if dr == 0 and dc == 0:
@@ -94,8 +104,9 @@ class GridWidget(QWidget):
                         new_row, new_col = row + dr, col + dc
                         if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
                             forbidden_cells.add((new_row, new_col))
-            
-            elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
+        
+        elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
+            for row, col in figure_cells:
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
@@ -173,7 +184,7 @@ class GridWidget(QWidget):
         cell_width = width / self.grid_size
         cell_height = height / self.grid_size
 
-        if self.current_task in ["1a", "4.1a"]:
+        if self.current_task in ["1a", "4.1a", "1b", "4.1b"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
             for zone_cell in self.forbidden_zones:
@@ -190,7 +201,7 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(QColor(0, 0, 255, 180)))
         
-        if self.current_task in ["1a", "4.1a"]:
+        if self.current_task in ["1a", "4.1a", "1b", "4.1b"]:
             if self.hover_cell is not None and self.can_place_figure(*self.hover_cell):
                 row, col = self.hover_cell
                 cells = self.get_figure_cells(row, col)
@@ -200,12 +211,12 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(QColor(255, 0, 0, 120)))
             
-        elif self.current_task in ["1b", "1c", "2a", "4.1b", "4.1c", "4.2a", "3a", "3b", "4.3a", "4.3b"]:
+        elif self.current_task in ["1c", "2a", "4.1c", "4.2a", "3a", "3b", "4.3a", "4.3b"]:
             painter.fillRect(0, 0, width, height, QBrush(QColor(240, 240, 240)))
             painter.setPen(QPen(Qt.black, 2))
             painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
         
-        if self.hover_cell is not None and self.current_task in ["1a", "4.1a"]:
+        if self.hover_cell is not None and self.current_task in ["1a", "4.1a", "1b", "4.1b"]:
             row, col = self.hover_cell
             
             x = col * cell_width
@@ -226,7 +237,7 @@ class GridWidget(QWidget):
             painter.drawLine(0, int(y), width, int(y))
     
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self.current_task not in ["1a", "4.1a"]:
+        if self.current_task not in ["1a", "4.1a", "1b", "4.1b"]:
             self.hover_cell = None
             self.coords_label.hide()
             return
@@ -266,7 +277,7 @@ class GridWidget(QWidget):
         self.update()
     
     def mousePressEvent(self, event: QMouseEvent):
-        if self.current_task in ["1a", "4.1a"]:
+        if self.current_task in ["1a", "4.1a", "1b", "4.1b"]:
             if event.button() == Qt.LeftButton and self.hover_cell is not None:
                 row, col = self.hover_cell
                 

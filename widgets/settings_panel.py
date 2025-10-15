@@ -10,7 +10,7 @@ class SettingsPanel(QWidget):
     def __init__(self):
         super().__init__()
         self.setFixedWidth(Constants.SETTINGS_PANEL_WIDTH)
-        self.current_variables = {"s": 0, "t": 0}
+        self.current_variables = {"s": 1, "t": 1}
         self.current_task = "1a"
         self.current_grid_size = Constants.DEFAULT_GRID_SIZE
         self.setup_ui()
@@ -127,23 +127,23 @@ class SettingsPanel(QWidget):
         if task in ["1a", "4.1a"]:
             self.s_widget.setVisible(False)
             self.t_widget.setVisible(False)
-        #elif task in ["1b", "4.1b"]:
-            #self.s_widget.setVisible(True)
-            #self.t_widget.setVisible(True)
-        #elif task in ["1c", "4.1c"]:
-            #self.s_widget.setVisible(True)
-            #self.t_widget.setVisible(False)
-        #else:
-            #self.s_widget.setVisible(False)
-            #self.t_widget.setVisible(False)
+        elif task in ["1b", "4.1b"]:
+            self.s_widget.setVisible(True)
+            self.t_widget.setVisible(True)
+        elif task in ["1c", "4.1c"]:
+            self.s_widget.setVisible(True)
+            self.t_widget.setVisible(False)
+        else:
+            self.s_widget.setVisible(False)
+            self.t_widget.setVisible(False)
     
     def update_parameters_display(self):
         if self.current_task in ["1a", "4.1a"]:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
-        #elif self.current_task in ["1b", "4.1b"]:
-            #parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
-        #elif self.current_task in ["1c", "4.1c"]:
-            #parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
+        elif self.current_task in ["1b", "4.1b"]:
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
+        elif self.current_task in ["1c", "4.1c"]:
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
         else:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
         
@@ -159,12 +159,12 @@ class SettingsPanel(QWidget):
         if self.current_task in ["1a", "4.1a"]:
             self.current_variables["s"] = 1
             self.current_variables["t"] = 1
-        #elif self.current_task in ["1b", "4.1b"]:
-            #self.current_variables["s"] = self.s_input.value()
-            #self.current_variables["t"] = self.t_input.value()
-        #elif self.current_task in ["1c", "4.1c"]:
-            #self.current_variables["s"] = self.s_input.value()
-            #self.current_variables["t"] = 1
+        elif self.current_task in ["1b", "4.1b"]:
+            self.current_variables["s"] = self.s_input.value()
+            self.current_variables["t"] = self.t_input.value()
+        elif self.current_task in ["1c", "4.1c"]:
+            self.current_variables["s"] = self.s_input.value()
+            self.current_variables["t"] = 1
         else:
             self.current_variables = {"s": 1, "t": 1}
         
@@ -173,4 +173,5 @@ class SettingsPanel(QWidget):
         self.update_parameters_display()
 
     def on_task_changed(self):
+        self.update_input_visibility()
         self.task_changed.emit()
