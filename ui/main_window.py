@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         self.settings_panel.update_input_visibility()
     
     def has_figures(self):
-        return len(self.grid_widget.placed_figures) > 0
+        return len(self.grid_widget.placed_figures) > 0 or len(self.grid_widget.placed_cells) > 0
     
     def closeEvent(self, event):
         if not self.has_figures():
@@ -131,6 +131,7 @@ class MainWindow(QMainWindow):
                 'current_task': self.grid_widget.current_task,
                 'variables': self.grid_widget.variables,
                 'placed_figures': self.grid_widget.placed_figures,
+                'placed_cells': list(self.grid_widget.placed_cells),
                 'forbidden_zones': self.grid_widget.forbidden_zones,
                 'current_rotation': self.grid_widget.current_rotation
             }
@@ -181,6 +182,11 @@ class MainWindow(QMainWindow):
                 self.grid_widget.placed_figures = convert_figures(data['placed_figures'])
                 self.grid_widget.forbidden_zones = [tuple(cell) for cell in data['forbidden_zones']]
                 self.grid_widget.current_rotation = data['current_rotation']
+                
+                if 'placed_cells' in data:
+                    self.grid_widget.placed_cells = set(tuple(cell) for cell in data['placed_cells'])
+                else:
+                    self.grid_widget.placed_cells = set()
                 
                 self.settings_panel.task_combo.setCurrentText(data['current_task'])
                 self.settings_panel.grid_size_input.setValue(data['grid_size'])
