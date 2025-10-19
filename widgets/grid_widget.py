@@ -259,7 +259,7 @@ class GridWidget(QWidget):
         cell_width = width / self.grid_size
         cell_height = height / self.grid_size
 
-        if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c"]:
+        if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
             for zone_cell in self.forbidden_zones:
@@ -294,12 +294,12 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(QColor(255, 0, 0, 120)))
             
-        elif self.current_task in ["2a", "4.2a", "3a", "3b", "4.3a", "4.3b"]:
+        elif self.current_task in ["3a", "3b", "4.3a", "4.3b"]:
             painter.fillRect(0, 0, width, height, QBrush(QColor(240, 240, 240)))
             painter.setPen(QPen(Qt.black, 2))
             painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
         
-        if self.hover_cell is not None and self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c"]:
+        if self.hover_cell is not None and self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             row, col = self.hover_cell
             
             x = col * cell_width
@@ -324,7 +324,7 @@ class GridWidget(QWidget):
             painter.drawLine(0, int(y), width, int(y))
     
     def mouseMoveEvent(self, event: QMouseEvent):
-        if self.current_task not in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c"]:
+        if self.current_task not in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             self.hover_cell = None
             self.coords_label.hide()
             return
@@ -364,7 +364,7 @@ class GridWidget(QWidget):
         self.update()
     
     def mousePressEvent(self, event: QMouseEvent):
-        if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c"]:
+        if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             if event.button() == Qt.LeftButton and self.hover_cell is not None:
                 row, col = self.hover_cell
                 
@@ -379,6 +379,8 @@ class GridWidget(QWidget):
                         self.remove_figure_at(row, col)
                     else:
                         self.place_figure(row, col)
+                elif self.current_task in ["2a", "4.2a"]:
+                    pass
                 else:
                     if figure_exists:
                         self.remove_figure_at(row, col)

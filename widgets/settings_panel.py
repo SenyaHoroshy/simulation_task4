@@ -133,6 +133,9 @@ class SettingsPanel(QWidget):
         elif task in ["1c", "4.1c"]:
             self.s_widget.setVisible(True)
             self.t_widget.setVisible(False)
+        elif task in ["2a", "4.2a"]:
+            self.s_widget.setVisible(True)
+            self.t_widget.setVisible(False)
         else:
             self.s_widget.setVisible(False)
             self.t_widget.setVisible(False)
@@ -143,6 +146,8 @@ class SettingsPanel(QWidget):
         elif self.current_task in ["1b", "4.1b"]:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
         elif self.current_task in ["1c", "4.1c"]:
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
+        elif self.current_task in ["2a", "4.2a"]:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
         else:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
@@ -163,6 +168,9 @@ class SettingsPanel(QWidget):
             self.current_variables["s"] = self.s_input.value()
             self.current_variables["t"] = self.t_input.value()
         elif self.current_task in ["1c", "4.1c"]:
+            self.current_variables["s"] = self.s_input.value()
+            self.current_variables["t"] = 1
+        elif self.current_task in ["2a", "4.2a"]:
             self.current_variables["s"] = self.s_input.value()
             self.current_variables["t"] = 1
         else:
