@@ -126,13 +126,21 @@ class MainWindow(QMainWindow):
             if not file_path.endswith('.json'):
                 file_path += '.json'
             
+            # Конвертируем данные для сохранения
             data = {
                 'grid_size': self.grid_widget.grid_size,
                 'current_task': self.grid_widget.current_task,
                 'variables': self.grid_widget.variables,
-                'placed_figures': self.grid_widget.placed_figures,
-                'placed_cells': list(self.grid_widget.placed_cells),
-                'forbidden_zones': self.grid_widget.forbidden_zones,
+                'placed_figures': [
+                    [[list(coord), cell_type] for coord, cell_type in figure] 
+                    for figure in self.grid_widget.placed_figures
+                ],
+                'placed_cells': [
+                    [list(coord), cell_type] for coord, cell_type in self.grid_widget.placed_cells
+                ],
+                'forbidden_zones': [
+                    [list(coord), cell_type] for coord, cell_type in self.grid_widget.forbidden_zones
+                ],
                 'current_rotation': self.grid_widget.current_rotation
             }
             
@@ -147,7 +155,7 @@ class MainWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, 'Ошибка', f'Не удалось сохранить файл: {str(e)}')
             return False
-    
+
     def load_file(self):
         try:
             file_path, _ = QFileDialog.getOpenFileName(
@@ -162,29 +170,34 @@ class MainWindow(QMainWindow):
                     data = json.load(f)
                 
                 required_fields = ['grid_size', 'current_task', 'variables', 
-                                 'placed_figures', 'forbidden_zones', 'current_rotation']
+                                'placed_figures', 'forbidden_zones', 'current_rotation']
                 
                 for field in required_fields:
                     if field not in data:
                         raise ValueError(f'Отсутствует обязательное поле: {field}')
                 
-
-                def convert_figures(figures_data):
-                    converted_figures = []
-                    for figure in figures_data:
-                        converted_figure = tuple(tuple(cell) for cell in figure)
-                        converted_figures.append(converted_figure)
-                    return converted_figures
-                
+                # Конвертируем загруженные данные
                 self.grid_widget.grid_size = data['grid_size']
                 self.grid_widget.current_task = data['current_task']
                 self.grid_widget.variables = data['variables']
-                self.grid_widget.placed_figures = convert_figures(data['placed_figures'])
-                self.grid_widget.forbidden_zones = [tuple(cell) for cell in data['forbidden_zones']]
+                
+                # Конвертируем фигуры
+                self.grid_widget.placed_figures = [
+                    [((coord[0], coord[1]), cell_type) for coord, cell_type in figure] 
+                    for figure in data['placed_figures']
+                ]
+                
+                # Конвертируем запретные зоны
+                self.grid_widget.forbidden_zones = [
+                    ((coord[0], coord[1]), cell_type) for coord, cell_type in data['forbidden_zones']
+                ]
+                
                 self.grid_widget.current_rotation = data['current_rotation']
                 
                 if 'placed_cells' in data:
-                    self.grid_widget.placed_cells = set(tuple(cell) for cell in data['placed_cells'])
+                    self.grid_widget.placed_cells = set(
+                        ((coord[0], coord[1]), cell_type) for coord, cell_type in data['placed_cells']
+                    )
                 else:
                     self.grid_widget.placed_cells = set()
                 
