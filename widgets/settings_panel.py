@@ -148,7 +148,7 @@ class SettingsPanel(QWidget):
         elif self.current_task in ["1c", "4.1c"]:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
         elif self.current_task in ["2a", "4.2a"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\n(Используйте колесико мыши)"
         else:
             parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
         

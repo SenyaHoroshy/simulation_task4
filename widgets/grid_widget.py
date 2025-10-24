@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget, QLabel
-from PySide6.QtGui import QPainter, QPen, QMouseEvent, QBrush, QColor
-from PySide6.QtCore import Qt, QPoint, Signal
+from PySide6.QtGui import QPainter, QPen, QMouseEvent, QBrush, QColor, QPolygonF
+from PySide6.QtCore import Qt, QPoint, Signal, QPointF
 from utils.constants import Constants
 from utils.figure_manager import FigureManager
 
@@ -16,11 +16,12 @@ class GridWidget(QWidget):
         self.setMinimumSize(Constants.GRID_MIN_SIZE, Constants.GRID_MIN_SIZE)
         self.hover_cell = None
         self.coords_label = None
-        self.placed_figures = []  # Каждая фигура - список пар [(координаты, type), ...]
-        self.forbidden_zones = []  # Каждая запретная зона - список пар [(координаты, type), ...]
-        self.placed_cells = set()  # Для 1c/4.1c: пары ((координаты), type)
+        self.placed_figures = []
+        self.forbidden_zones = []
+        self.placed_cells = set()
         self.current_figure = self.get_figure_shape()
         self.current_rotation = 0
+        self.current_figure_type = 0
         self.setup_coords_label()
         self.setMouseTracking(True)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -46,6 +47,7 @@ class GridWidget(QWidget):
         self.forbidden_zones = []
         self.placed_cells = set()
         self.current_rotation = 0
+        self.current_figure_type = 0
         self.update_current_figure()
         self.update_figures_count()
         self.update()
@@ -56,6 +58,7 @@ class GridWidget(QWidget):
         self.forbidden_zones = []
         self.placed_cells = set()
         self.current_rotation = 0
+        self.current_figure_type = 0
         self.update_current_figure()
         self.update_figures_count()
         self.update()
@@ -75,6 +78,8 @@ class GridWidget(QWidget):
                 for j in range(t):
                     rectangle.append((i, j))
             return rectangle
+        elif self.current_task in ["2a", "4.2a"]:
+            return FigureManager.get_triangle_shape_by_type(self.current_figure_type)
         return FigureManager.get_figure_shapes()["corner"]
     
     def update_current_figure(self):
@@ -86,21 +91,34 @@ class GridWidget(QWidget):
         self.update_current_figure()
         self.update()
     
+    def change_figure_type(self, delta):
+        if self.current_task in ["2a", "4.2a"]:
+            self.current_figure_type = (self.current_figure_type + delta) % 5
+            self.update_current_figure()
+            self.update()
+    
     def get_figure_cells(self, base_row, base_col):
         cells = []
-        for dr, dc in self.current_figure:
-            new_row = base_row + dr
-            new_col = base_col + dc
-            if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
-                # Для всех задач кроме 1c/4.1c type всегда 0
-                cell_type = 0
-                cells.append(((new_row, new_col), cell_type))
+        
+        if self.current_task in ["2a", "4.2a"]:
+            if 0 <= base_row < self.grid_size and 0 <= base_col < self.grid_size:
+                cells.append(((base_row, base_col), self.current_figure_type))
+        else:
+            for dr, dc in self.current_figure:
+                new_row = base_row + dr
+                new_col = base_col + dc
+                if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                    cell_type = 0
+                    cells.append(((new_row, new_col), cell_type))
+        
         return cells
     
     def get_forbidden_zone_cells(self, figure_cells):
+        if self.current_task in ["2a", "4.2a"]:
+            return []
+            
         forbidden_cells = []
         
-        # Извлекаем только координаты из figure_cells
         coord_cells = [coord for coord, cell_type in figure_cells]
         
         if self.current_task in ["1a", "1b", "1c"]:
@@ -111,7 +129,6 @@ class GridWidget(QWidget):
                             continue
                         new_row, new_col = row + dr, col + dc
                         if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
-                            # Для всех задач type всегда 0
                             forbidden_cells.append(((new_row, new_col), 0))
         
         elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
@@ -119,10 +136,8 @@ class GridWidget(QWidget):
                 for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
-                        # Для всех задач type всегда 0
                         forbidden_cells.append(((new_row, new_col), 0))
         
-        # Убираем клетки, которые уже есть в фигуре
         forbidden_coords = set([coord for coord, cell_type in forbidden_cells])
         figure_coords = set([coord for coord, cell_type in figure_cells])
         forbidden_cells = [((row, col), cell_type) for (row, col), cell_type in forbidden_cells 
@@ -132,36 +147,40 @@ class GridWidget(QWidget):
     
     def can_place_figure(self, row, col):
         if self.current_task in ["1c", "4.1c"]:
-            # Для 1c/4.1c проверяем отдельную клетку
             coord_to_check = (row, col)
-            cell_type = 0  # Для 1c/4.1c type всегда 0
+            cell_type = 0
             
-            # Проверяем, не занята ли клетка
             for placed_coord, placed_type in self.placed_cells:
                 if placed_coord == coord_to_check:
                     return False
             
-            # Проверяем, не в запретной зоне ли клетка
             for forbidden_coord, forbidden_type in self.forbidden_zones:
                 if forbidden_coord == coord_to_check:
                     return False
             
             return True
         
-        # Для остальных задач проверяем всю фигуру
+        if self.current_task in ["2a", "4.2a"]:
+            coord_to_check = (row, col)
+            
+            for figure in self.placed_figures:
+                for placed_cell_coord, placed_cell_type in figure:
+                    if placed_cell_coord == coord_to_check:
+                        return False
+            
+            return True
+        
         cells = self.get_figure_cells(row, col)
         
         if len(cells) != len(self.current_figure):
             return False
         
-        # Проверяем, не пересекается ли с уже размещенными фигурами
         for cell_coord, cell_type in cells:
             for figure in self.placed_figures:
                 for placed_cell_coord, placed_cell_type in figure:
                     if placed_cell_coord == cell_coord:
                         return False
         
-        # Проверяем, не в запретной зоне ли
         for cell_coord, cell_type in cells:
             for forbidden_coord, forbidden_type in self.forbidden_zones:
                 if forbidden_coord == cell_coord:
@@ -181,7 +200,6 @@ class GridWidget(QWidget):
         else:
             directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         
-        # Используем только координаты для поиска компонент связности
         placed_coords = {coord for coord, cell_type in self.placed_cells}
         
         for coord in placed_coords:
@@ -193,7 +211,6 @@ class GridWidget(QWidget):
                     current = stack.pop()
                     if current not in visited:
                         visited.add(current)
-                        # Находим соответствующий тип для этой координаты
                         cell_type = next((t for c, t in self.placed_cells if c == current), 0)
                         component.append((current, cell_type))
                         
@@ -222,7 +239,6 @@ class GridWidget(QWidget):
     def place_figure(self, row, col):
         if self.current_task in ["1c", "4.1c"]:
             if self.can_place_figure(row, col):
-                # Для 1c/4.1c type всегда 0
                 cell_type = 0
                 self.placed_cells.add(((row, col), cell_type))
                 self.update_figures_from_components()
@@ -236,8 +252,9 @@ class GridWidget(QWidget):
             cells = self.get_figure_cells(row, col)
             self.placed_figures.append(cells)
             
-            forbidden_cells = self.get_forbidden_zone_cells(cells)
-            self.forbidden_zones.extend(forbidden_cells)
+            if self.current_task not in ["2a", "4.2a"]:
+                forbidden_cells = self.get_forbidden_zone_cells(cells)
+                self.forbidden_zones.extend(forbidden_cells)
             
             self.update_figures_count()
             self.update()
@@ -246,7 +263,6 @@ class GridWidget(QWidget):
     
     def remove_figure_at(self, row, col):
         if self.current_task in ["1c", "4.1c"]:
-            # Ищем клетку с такими координатами (игнорируя type)
             cell_to_remove = None
             for cell in self.placed_cells:
                 if cell[0] == (row, col):
@@ -262,13 +278,13 @@ class GridWidget(QWidget):
                 return True
             return False
         
-        # Для остальных задач ищем фигуру, содержащую эту клетку
         for i, figure in enumerate(self.placed_figures):
             for cell_coord, cell_type in figure:
                 if cell_coord == (row, col):
                     removed_figure = self.placed_figures.pop(i)
                     
-                    self.update_all_forbidden_zones()
+                    if self.current_task not in ["2a", "4.2a"]:
+                        self.update_all_forbidden_zones()
                     
                     self.update_figures_count()
                     self.update()
@@ -276,6 +292,9 @@ class GridWidget(QWidget):
         return False
     
     def update_all_forbidden_zones(self):
+        if self.current_task in ["2a", "4.2a"]:
+            return
+            
         self.forbidden_zones = []
         for figure in self.placed_figures:
             forbidden_cells = self.get_forbidden_zone_cells(figure)
@@ -290,6 +309,13 @@ class GridWidget(QWidget):
             self.rotate_figure()
         else:
             super().keyPressEvent(event)
+    
+    def wheelEvent(self, event):
+        if self.current_task in ["2a", "4.2a"]:
+            delta = 1 if event.angleDelta().y() > 0 else -1
+            self.change_figure_type(delta)
+        else:
+            super().wheelEvent(event)
         
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -304,16 +330,15 @@ class GridWidget(QWidget):
         if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
-            # Рисуем запретные зоны (используем только координаты)
-            for zone_coord, zone_type in self.forbidden_zones:
-                row, col = zone_coord
-                x = col * cell_width
-                y = row * cell_height
-                painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
-                               QBrush(QColor(255, 0, 0, 80)))
+            if self.current_task not in ["2a", "4.2a"]:
+                for zone_coord, zone_type in self.forbidden_zones:
+                    row, col = zone_coord
+                    x = col * cell_width
+                    y = row * cell_height
+                    painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
+                                   QBrush(QColor(255, 0, 0, 80)))
             
             if self.current_task in ["1c", "4.1c"]:
-                # Рисуем отдельные клетки для 1c/4.1c (используем только координаты)
                 for coord, cell_type in self.placed_cells:
                     row, col = coord
                     x = col * cell_width
@@ -322,43 +347,125 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(color))
             
-            # Рисуем фигуры (используем только координаты)
             for figure in self.placed_figures:
                 for coord, cell_type in figure:
                     row, col = coord
                     x = col * cell_width
                     y = row * cell_height
-                    painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
-                                   QBrush(QColor(0, 0, 255, 180)))
+                    
+                    print(self.placed_figures)
+
+                    if self.current_task in ["2a", "4.2a"]:
+                        self.draw_triangle(painter, x, y, cell_width, cell_height, cell_type, 
+                                         QColor(0, 0, 255, 180))
+                    else:
+                        painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
+                                       QBrush(QColor(0, 0, 255, 180)))
         
-        if self.current_task in ["1a", "4.1a", "1b", "4.1b"]:
-            if self.hover_cell is not None and self.can_place_figure(*self.hover_cell):
-                row, col = self.hover_cell
-                cells = self.get_figure_cells(row, col)
-                for coord, cell_type in cells:
-                    r, c = coord
-                    x = c * cell_width
-                    y = r * cell_height
-                    painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
-                                   QBrush(QColor(255, 0, 0, 120)))
+        if (self.hover_cell is not None and 
+            self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"] and
+            self.can_place_figure(*self.hover_cell)):
             
-        elif self.current_task in ["3a", "3b", "4.3a", "4.3b"]:
-            painter.fillRect(0, 0, width, height, QBrush(QColor(240, 240, 240)))
-            painter.setPen(QPen(Qt.black, 2))
-            painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
-        
-        if self.hover_cell is not None and self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             row, col = self.hover_cell
-            
             x = col * cell_width
             y = row * cell_height
             
             painter.setPen(QPen(Qt.red, 3))
             painter.drawRect(int(x), int(y), int(cell_width), int(cell_height))
             
-            if self.current_task in ["1c", "4.1c"] and self.can_place_figure(row, col):
+            if self.current_task in ["2a", "4.2a"]:
+                self.draw_triangle(painter, x, y, cell_width, cell_height, 
+                                 self.current_figure_type, QColor(255, 0, 0, 120))
+            elif self.current_task in ["1c", "4.1c"]:
                 painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                QBrush(QColor(255, 0, 0, 120)))
+            else:
+                cells = self.get_figure_cells(row, col)
+                for coord, cell_type in cells:
+                    r, c = coord
+                    x_cell = c * cell_width
+                    y_cell = r * cell_height
+                    painter.fillRect(int(x_cell), int(y_cell), int(cell_width), int(cell_height), 
+                                   QBrush(QColor(255, 0, 0, 120)))
+        
+        elif self.hover_cell is not None and self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
+            row, col = self.hover_cell
+            x = col * cell_width
+            y = row * cell_height
+            
+            painter.setPen(QPen(Qt.red, 3))
+            painter.drawRect(int(x), int(y), int(cell_width), int(cell_height))
+            
+        elif self.current_task in ["3a", "3b", "4.3a", "4.3b"]:
+            painter.fillRect(0, 0, width, height, QBrush(QColor(240, 240, 240)))
+            painter.setPen(QPen(Qt.black, 2))
+            painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
+    
+    def draw_triangle(self, painter, x, y, width, height, triangle_type, color):
+        painter.setBrush(QBrush(color))
+        painter.setPen(QPen(Qt.black, 1))
+        
+        points = []
+        
+        if triangle_type == 0:
+            points = [
+                QPointF(x, y),
+                QPointF(x + width, y),
+                QPointF(x + width, y + height),
+                QPointF(x, y + height)
+            ]
+        elif triangle_type == 1:
+            points = [
+                QPointF(x, y),
+                QPointF(x + width, y),
+                QPointF(x, y + height)
+            ]
+        elif triangle_type == 2:
+            points = [
+                QPointF(x, y),
+                QPointF(x + width, y),
+                QPointF(x + width, y + height)
+            ]
+        elif triangle_type == 3:
+            points = [
+                QPointF(x, y),
+                QPointF(x, y + height),
+                QPointF(x + width, y + height)
+            ]
+        elif triangle_type == 4:
+            points = [
+                QPointF(x + width, y),
+                QPointF(x, y + height),
+                QPointF(x + width, y + height)
+            ]
+        elif triangle_type == 5:
+            points = [
+                QPointF(x, y),
+                QPointF(x + width, y),
+                QPointF(x + width/2, y + height/2)
+            ]
+        elif triangle_type == 6:
+            points = [
+                QPointF(x + width, y),
+                QPointF(x + width, y + height),
+                QPointF(x + width/2, y + height/2)
+            ]
+        elif triangle_type == 7:
+            points = [
+                QPointF(x, y + height),
+                QPointF(x + width, y + height),
+                QPointF(x + width/2, y + height/2)
+            ]
+        elif triangle_type == 8:
+            points = [
+                QPointF(x, y),
+                QPointF(x, y + height),
+                QPointF(x + width/2, y + height/2)
+            ]
+        
+        if points:
+            polygon = QPolygonF(points)
+            painter.drawPolygon(polygon)
     
     def draw_grid(self, painter, width, height, cell_width, cell_height):
         painter.setPen(QPen(Qt.black, 1))
@@ -416,7 +523,6 @@ class GridWidget(QWidget):
             if event.button() == Qt.LeftButton and self.hover_cell is not None:
                 row, col = self.hover_cell
                 
-                # Проверяем, есть ли уже фигура в этой клетке (используем только координаты)
                 figure_exists = False
                 for figure in self.placed_figures:
                     for coord, cell_type in figure:
@@ -427,14 +533,11 @@ class GridWidget(QWidget):
                         break
                 
                 if self.current_task in ["1c", "4.1c"]:
-                    # Проверяем, есть ли уже клетка с такими координатами
                     cell_exists = any(coord == (row, col) for coord, cell_type in self.placed_cells)
                     if cell_exists:
                         self.remove_figure_at(row, col)
                     else:
                         self.place_figure(row, col)
-                elif self.current_task in ["2a", "4.2a"]:
-                    pass
                 else:
                     if figure_exists:
                         self.remove_figure_at(row, col)
@@ -446,6 +549,7 @@ class GridWidget(QWidget):
         print("placed_cells: " + f"{self.placed_cells}")
         print("current_figure: " + f"{self.current_figure}")
         print("current_rotation: " + f"{self.current_rotation}")
+        print("current_figure_type: " + f"{self.current_figure_type}")
     
     def leaveEvent(self, event):
         self.hover_cell = None
