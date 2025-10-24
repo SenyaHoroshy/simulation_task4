@@ -126,7 +126,6 @@ class MainWindow(QMainWindow):
             if not file_path.endswith('.json'):
                 file_path += '.json'
             
-            # Конвертируем данные для сохранения
             data = {
                 'grid_size': self.grid_widget.grid_size,
                 'current_task': self.grid_widget.current_task,
@@ -176,18 +175,15 @@ class MainWindow(QMainWindow):
                     if field not in data:
                         raise ValueError(f'Отсутствует обязательное поле: {field}')
                 
-                # Конвертируем загруженные данные
                 self.grid_widget.grid_size = data['grid_size']
                 self.grid_widget.current_task = data['current_task']
                 self.grid_widget.variables = data['variables']
                 
-                # Конвертируем фигуры
                 self.grid_widget.placed_figures = [
                     [((coord[0], coord[1]), cell_type) for coord, cell_type in figure] 
                     for figure in data['placed_figures']
                 ]
                 
-                # Конвертируем запретные зоны
                 self.grid_widget.forbidden_zones = [
                     ((coord[0], coord[1]), cell_type) for coord, cell_type in data['forbidden_zones']
                 ]

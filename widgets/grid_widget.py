@@ -402,6 +402,8 @@ class GridWidget(QWidget):
             painter.drawText(self.rect(), Qt.AlignCenter, f"Пункты {self.current_task}\n(реализация в разработке)")
     
     def draw_triangle(self, painter, x, y, width, height, triangle_type, color):
+        painter.save()
+        
         painter.setBrush(QBrush(color))
         painter.setPen(QPen(Qt.black, 1))
         
@@ -462,10 +464,19 @@ class GridWidget(QWidget):
                 QPointF(x, y + height),
                 QPointF(x + width/2, y + height/2)
             ]
+        else:
+            points = [
+                QPointF(x, y),
+                QPointF(x + width, y),
+                QPointF(x + width, y + height),
+                QPointF(x, y + height)
+            ]
         
         if points:
             polygon = QPolygonF(points)
             painter.drawPolygon(polygon)
+        
+        painter.restore()
     
     def draw_grid(self, painter, width, height, cell_width, cell_height):
         painter.setPen(QPen(Qt.black, 1))
