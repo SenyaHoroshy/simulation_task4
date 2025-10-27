@@ -113,6 +113,150 @@ class GridWidget(QWidget):
         
         return cells
     
+    def get_cell_weight(self, cell_type):
+        if cell_type == 0:
+            return 1
+        else:
+            return 0.5
+    
+    def get_component_weight(self, component):
+        total_weight = 0
+        for coord, cell_type in component:
+            total_weight += self.get_cell_weight(cell_type)
+        return total_weight
+    
+    def are_cells_connected(self, cell1, cell2):
+        (row1, col1), type1 = cell1
+        (row2, col2), type2 = cell2
+        
+        directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        
+        is_neighbor = False
+        for dr, dc in directions:
+            if row1 + dr == row2 and col1 + dc == col2:
+                is_neighbor = True
+                break
+        
+        if not is_neighbor:
+            return False
+        
+        if self.current_task in ["1c", "4.1c"]:
+            return True
+            
+        elif self.current_task == "2a":
+            return self.are_cells_connected_2a(cell1, cell2)
+            
+        elif self.current_task == "4.2a":
+            return self.are_cells_connected_2a(cell1, cell2)
+        
+        return True
+    
+    def are_cells_connected_2a(self, cell1, cell2):
+        (row1, col1), type1 = cell1
+        (row2, col2), type2 = cell2
+        if type1 != 0 and type2 == 0:
+            (row1, col1), type1 = cell2
+            (row2, col2), type2 = cell1
+        
+        if type1 == 0 and type2 == 0:
+            return True
+            
+        if type1 > 0 and type2 > 0 and type1 == type2:
+            return False
+        
+        if type1 == 0:
+            if row1 - row2 == 1:
+                return type2 in [3, 4]
+            if row1 - row2 == -1:
+                return type2 in [1, 2]
+            if col1 - col2 == 1:
+                return type2 in [2, 4]
+            if col1 - col2 == -1:
+                return type2 in [1, 3]
+        
+        if type1 == 1:
+            if type2 == 2:
+                return col1 - col2 == 1
+            elif type2 == 3:
+                return row1 - row2 == 1
+            elif type2 == 4:
+                return col1 - col2 == 1 or row1 - row2 == 1
+        elif type1 == 2:
+            if type2 == 1:
+                return col1 - col2 == -1
+            elif type2 == 4:
+                return row1 - row2 == 1
+            elif type2 == 3:
+                return col1 - col2 == -1 or row1 - row2 == 1
+        elif type1 == 3:
+            if type2 == 4:
+                return col1 - col2 == 1
+            elif type2 == 1:
+                return row1 - row2 == -1
+            elif type2 == 2:
+                return col1 - col2 == 1 or row1 - row2 == -1
+        elif type1 == 4:
+            if type2 == 3:
+                return col1 - col2 == -1
+            elif type2 == 2:
+                return row1 - row2 == -1
+            elif type2 == 1:
+                return col1 - col2 == -1 or row1 - row2 == -1
+
+        return False
+    
+    def find_connected_components(self):
+        if not self.placed_cells:
+            return []
+            
+        visited = set()
+        components = []
+        
+        placed_cells_list = list(self.placed_cells)
+        
+        for cell in placed_cells_list:
+            coord, cell_type = cell
+            if coord not in visited:
+                component = []
+                stack = [cell]
+                
+                while stack:
+                    current_cell = stack.pop()
+                    current_coord, current_type = current_cell
+                    
+                    if current_coord not in visited:
+                        visited.add(current_coord)
+                        component.append(current_cell)
+                        
+                        for other_cell in placed_cells_list:
+                            other_coord, other_type = other_cell
+                            if other_coord not in visited:
+                                if self.are_cells_connected(current_cell, other_cell):
+                                    stack.append(other_cell)
+                
+                components.append(component)
+        
+        return components
+    
+    def is_valid_component(self, component):
+        if self.current_task in ["2a", "4.2a"]:
+            component_weight = self.get_component_weight(component)
+            return component_weight == self.variables["s"]
+        else:
+            return len(component) == self.variables["s"]
+    
+    def update_figures_from_components(self):
+        self.placed_figures = []
+        self.forbidden_zones = []
+        
+        components = self.find_connected_components()
+        
+        for component in components:
+            if self.is_valid_component(component):
+                self.placed_figures.append(component)
+                forbidden_cells = self.get_forbidden_zone_cells(component)
+                self.forbidden_zones.extend(forbidden_cells)
+    
     def get_forbidden_zone_cells(self, figure_cells):
         if self.current_task in ["2a", "4.2a"]:
             return []
@@ -146,7 +290,7 @@ class GridWidget(QWidget):
         return forbidden_cells
     
     def can_place_figure(self, row, col):
-        if self.current_task in ["1c", "4.1c"]:
+        if self.current_task in ["1c", "4.1c", "2a", "4.2a"]:
             coord_to_check = (row, col)
             cell_type = 0
             
@@ -157,16 +301,6 @@ class GridWidget(QWidget):
             for forbidden_coord, forbidden_type in self.forbidden_zones:
                 if forbidden_coord == coord_to_check:
                     return False
-            
-            return True
-        
-        if self.current_task in ["2a", "4.2a"]:
-            coord_to_check = (row, col)
-            
-            for figure in self.placed_figures:
-                for placed_cell_coord, placed_cell_type in figure:
-                    if placed_cell_coord == coord_to_check:
-                        return False
             
             return True
         
@@ -188,58 +322,10 @@ class GridWidget(QWidget):
         
         return True
     
-    def find_connected_components(self):
-        if not self.placed_cells:
-            return []
-            
-        visited = set()
-        components = []
-        
-        if self.current_task == "1c":
-            directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
-        else:
-            directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        
-        placed_coords = {coord for coord, cell_type in self.placed_cells}
-        
-        for coord in placed_coords:
-            if coord not in visited:
-                component = []
-                stack = [coord]
-                
-                while stack:
-                    current = stack.pop()
-                    if current not in visited:
-                        visited.add(current)
-                        cell_type = next((t for c, t in self.placed_cells if c == current), 0)
-                        component.append((current, cell_type))
-                        
-                        for dr, dc in directions:
-                            neighbor = (current[0] + dr, current[1] + dc)
-                            if neighbor in placed_coords and neighbor not in visited:
-                                stack.append(neighbor)
-                
-                components.append(component)
-        
-        return components
-    
-    def update_figures_from_components(self):
-        self.placed_figures = []
-        self.forbidden_zones = []
-        
-        components = self.find_connected_components()
-        s = self.variables["s"]
-        
-        for component in components:
-            if len(component) == s:
-                self.placed_figures.append(component)
-                forbidden_cells = self.get_forbidden_zone_cells(component)
-                self.forbidden_zones.extend(forbidden_cells)
-    
     def place_figure(self, row, col):
-        if self.current_task in ["1c", "4.1c"]:
+        if self.current_task in ["1c", "4.1c", "2a", "4.2a"]:
             if self.can_place_figure(row, col):
-                cell_type = 0
+                cell_type = self.current_figure_type if self.current_task in ["2a", "4.2a"] else 0
                 self.placed_cells.add(((row, col), cell_type))
                 self.update_figures_from_components()
                 
@@ -262,7 +348,7 @@ class GridWidget(QWidget):
         return False
     
     def remove_figure_at(self, row, col):
-        if self.current_task in ["1c", "4.1c"]:
+        if self.current_task in ["1c", "4.1c", "2a", "4.2a"]:
             cell_to_remove = None
             for cell in self.placed_cells:
                 if cell[0] == (row, col):
@@ -338,11 +424,15 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(QColor(255, 0, 0, 80)))
             
-            if self.current_task in ["1c", "4.1c"]:
-                for coord, cell_type in self.placed_cells:
-                    row, col = coord
-                    x = col * cell_width
-                    y = row * cell_height
+            for coord, cell_type in self.placed_cells:
+                row, col = coord
+                x = col * cell_width
+                y = row * cell_height
+                
+                if self.current_task in ["2a", "4.2a"]:
+                    self.draw_triangle(painter, x, y, cell_width, cell_height, cell_type, 
+                                     QColor(0, 255, 0, 180))
+                else:
                     color = QColor(0, 255, 0, 180)
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(color))
@@ -353,8 +443,6 @@ class GridWidget(QWidget):
                     x = col * cell_width
                     y = row * cell_height
                     
-                    print(self.placed_figures)
-
                     if self.current_task in ["2a", "4.2a"]:
                         self.draw_triangle(painter, x, y, cell_width, cell_height, cell_type, 
                                          QColor(0, 0, 255, 180))
@@ -543,7 +631,7 @@ class GridWidget(QWidget):
                     if figure_exists:
                         break
                 
-                if self.current_task in ["1c", "4.1c"]:
+                if self.current_task in ["1c", "4.1c", "2a", "4.2a"]:
                     cell_exists = any(coord == (row, col) for coord, cell_type in self.placed_cells)
                     if cell_exists:
                         self.remove_figure_at(row, col)
@@ -555,12 +643,12 @@ class GridWidget(QWidget):
                     else:
                         self.place_figure(row, col)
 
-        print("placed_figures: " + f"{self.placed_figures}")
-        print("forbidden_zones: " + f"{self.forbidden_zones}")
-        print("placed_cells: " + f"{self.placed_cells}")
-        print("current_figure: " + f"{self.current_figure}")
-        print("current_rotation: " + f"{self.current_rotation}")
-        print("current_figure_type: " + f"{self.current_figure_type}")
+        #print("placed_figures: " + f"{self.placed_figures}")
+        #print("forbidden_zones: " + f"{self.forbidden_zones}")
+        #print("placed_cells: " + f"{self.placed_cells}")
+        #print("current_figure: " + f"{self.current_figure}")
+        #print("current_rotation: " + f"{self.current_rotation}")
+        #print("current_figure_type: " + f"{self.current_figure_type}")
     
     def leaveEvent(self, event):
         self.hover_cell = None
