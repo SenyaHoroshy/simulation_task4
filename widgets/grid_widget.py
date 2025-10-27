@@ -258,26 +258,252 @@ class GridWidget(QWidget):
                 self.forbidden_zones.extend(forbidden_cells)
     
     def get_forbidden_zone_cells(self, figure_cells):
-        if self.current_task in ["2a", "4.2a"]:
-            return []
+        if self.current_task == "2a":
+            return self.get_forbidden_zone_2a(figure_cells)
+        elif self.current_task == "4.2a":
+            return self.get_forbidden_zone_4_2a(figure_cells)
+        elif self.current_task in ["1a", "1b", "1c"]:
+            return self.get_forbidden_zone_1abc(figure_cells)
+        elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
+            return self.get_forbidden_zone_4_1abc(figure_cells)
+        return []
+    
+    def get_forbidden_zone_2a(self, figure_cells):
+        forbidden_cells = []
+        
+        for coord, cell_type in figure_cells:
+            row, col = coord
             
+            forbidden_types = [5, 6, 7, 8]
+            
+            for forbidden_type in forbidden_types:
+                forbidden_cells.append(((row, col), forbidden_type))
+                
+                if cell_type == 0:
+                    for drow, dcol in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                        new_row, new_col = row + drow, col + dcol
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.append(((new_row, new_col), forbidden_type))
+
+                elif cell_type == 1:
+                    for drow, dcol in [(-1, 0), (0, -1)]:
+                        new_row, new_col = row + drow, col + dcol
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.append(((new_row, new_col), forbidden_type))
+
+                    new_row, new_col = row, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row - 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row - 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                elif cell_type == 2:
+                    for drow, dcol in [(-1, 0), (0, 1)]:
+                        new_row, new_col = row + drow, col + dcol
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.append(((new_row, new_col), forbidden_type))
+
+                    new_row, new_col = row, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row + 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row - 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row - 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                elif cell_type == 3:
+                    for drow, dcol in [(1, 0), (0, -1)]:
+                        new_row, new_col = row + drow, col + dcol
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.append(((new_row, new_col), forbidden_type))
+
+                    new_row, new_col = row, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row - 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row - 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row + 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row + 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                elif cell_type == 4:
+                    for drow, dcol in [(1, 0), (0, 1)]:
+                        new_row, new_col = row + drow, col + dcol
+                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                            forbidden_cells.append(((new_row, new_col), forbidden_type))
+
+                    new_row, new_col = row, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row - 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row - 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row + 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+        
+        return list(set(forbidden_cells))
+    
+    def get_forbidden_zone_4_2a(self, figure_cells):
+        forbidden_cells = []
+        
+        for coord, cell_type in figure_cells:
+            row, col = coord
+            
+            forbidden_types = [5, 6, 7, 8]
+            
+            for forbidden_type in forbidden_types:
+                forbidden_cells.append(((row, col), forbidden_type))
+                
+                if cell_type == 0:
+                    new_row, new_col = row, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                
+                    new_row, new_col = row, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row - 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row + 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+
+                elif cell_type == 1:
+                    new_row, new_col = row, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row - 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                elif cell_type == 2:
+                    new_row, new_col = row, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row - 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                elif cell_type == 3:
+                    new_row, new_col = row, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row + 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+
+                elif cell_type == 4:
+                    new_row, new_col = row, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+        
+        return list(set(forbidden_cells))
+    
+    def can_place_in_forbidden_zone(self, cell_coord, cell_type, forbidden_type):
+        row, col = cell_coord
+        
+        if forbidden_type == 5:
+            return cell_type in [3, 4]
+        
+        elif forbidden_type == 6:
+            return cell_type in [1, 3]
+        
+        elif forbidden_type == 7:
+            return cell_type in [1, 2]
+        
+        elif forbidden_type == 8:
+            return cell_type in [2, 4]
+        
+        return False
+    
+    def get_forbidden_zone_1abc(self, figure_cells):
         forbidden_cells = []
         
         coord_cells = [coord for coord, cell_type in figure_cells]
         
-        if self.current_task in ["1a", "1b", "1c"]:
-            for row, col in coord_cells:
-                for dr in [-1, 0, 1]:
-                    for dc in [-1, 0, 1]:
-                        if dr == 0 and dc == 0:
-                            continue
-                        new_row, new_col = row + dr, col + dc
-                        if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
-                            forbidden_cells.append(((new_row, new_col), 0))
-        
-        elif self.current_task in ["4.1a", "4.1b", "4.1c"]:
-            for row, col in coord_cells:
-                for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+        for row, col in coord_cells:
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    if dr == 0 and dc == 0:
+                        continue
                     new_row, new_col = row + dr, col + dc
                     if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
                         forbidden_cells.append(((new_row, new_col), 0))
@@ -289,18 +515,40 @@ class GridWidget(QWidget):
         
         return forbidden_cells
     
+    def get_forbidden_zone_4_1abc(self, figure_cells):
+        forbidden_cells = []
+        
+        coord_cells = [coord for coord, cell_type in figure_cells]
+        
+        for row, col in coord_cells:
+            for dr, dc in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+                new_row, new_col = row + dr, col + dc
+                if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                    forbidden_cells.append(((new_row, new_col), 0))
+        
+        forbidden_coords = set([coord for coord, cell_type in forbidden_cells])
+        figure_coords = set([coord for coord, cell_type in figure_cells])
+        forbidden_cells = [((row, col), cell_type) for (row, col), cell_type in forbidden_cells 
+                          if (row, col) not in figure_coords]
+        
+        return forbidden_cells
+    
     def can_place_figure(self, row, col):
         if self.current_task in ["1c", "4.1c", "2a", "4.2a"]:
             coord_to_check = (row, col)
-            cell_type = 0
-            
+            cell_type = self.current_figure_type if self.current_task in ["2a", "4.2a"] else 0
+
             for placed_coord, placed_type in self.placed_cells:
                 if placed_coord == coord_to_check:
                     return False
-            
+
             for forbidden_coord, forbidden_type in self.forbidden_zones:
                 if forbidden_coord == coord_to_check:
-                    return False
+                    if self.current_task in ["2a", "4.2a"]:
+                        if not self.can_place_in_forbidden_zone(coord_to_check, cell_type, forbidden_type):
+                            return False
+                    else:
+                        return False
             
             return True
         
@@ -314,8 +562,7 @@ class GridWidget(QWidget):
                 for placed_cell_coord, placed_cell_type in figure:
                     if placed_cell_coord == cell_coord:
                         return False
-        
-        for cell_coord, cell_type in cells:
+            
             for forbidden_coord, forbidden_type in self.forbidden_zones:
                 if forbidden_coord == cell_coord:
                     return False
@@ -338,9 +585,8 @@ class GridWidget(QWidget):
             cells = self.get_figure_cells(row, col)
             self.placed_figures.append(cells)
             
-            if self.current_task not in ["2a", "4.2a"]:
-                forbidden_cells = self.get_forbidden_zone_cells(cells)
-                self.forbidden_zones.extend(forbidden_cells)
+            forbidden_cells = self.get_forbidden_zone_cells(cells)
+            self.forbidden_zones.extend(forbidden_cells)
             
             self.update_figures_count()
             self.update()
@@ -369,8 +615,7 @@ class GridWidget(QWidget):
                 if cell_coord == (row, col):
                     removed_figure = self.placed_figures.pop(i)
                     
-                    if self.current_task not in ["2a", "4.2a"]:
-                        self.update_all_forbidden_zones()
+                    self.update_all_forbidden_zones()
                     
                     self.update_figures_count()
                     self.update()
@@ -378,9 +623,6 @@ class GridWidget(QWidget):
         return False
     
     def update_all_forbidden_zones(self):
-        if self.current_task in ["2a", "4.2a"]:
-            return
-            
         self.forbidden_zones = []
         for figure in self.placed_figures:
             forbidden_cells = self.get_forbidden_zone_cells(figure)
@@ -416,11 +658,15 @@ class GridWidget(QWidget):
         if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
-            if self.current_task not in ["2a", "4.2a"]:
-                for zone_coord, zone_type in self.forbidden_zones:
-                    row, col = zone_coord
-                    x = col * cell_width
-                    y = row * cell_height
+            for zone_coord, zone_type in self.forbidden_zones:
+                row, col = zone_coord
+                x = col * cell_width
+                y = row * cell_height
+                
+                if self.current_task in ["2a", "4.2a"]:
+                    self.draw_triangle(painter, x, y, cell_width, cell_height, zone_type, 
+                                     QColor(255, 0, 0, 80))
+                else:
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(QColor(255, 0, 0, 80)))
             
@@ -642,13 +888,6 @@ class GridWidget(QWidget):
                         self.remove_figure_at(row, col)
                     else:
                         self.place_figure(row, col)
-
-        #print("placed_figures: " + f"{self.placed_figures}")
-        #print("forbidden_zones: " + f"{self.forbidden_zones}")
-        #print("placed_cells: " + f"{self.placed_cells}")
-        #print("current_figure: " + f"{self.current_figure}")
-        #print("current_rotation: " + f"{self.current_rotation}")
-        #print("current_figure_type: " + f"{self.current_figure_type}")
     
     def leaveEvent(self, event):
         self.hover_cell = None
