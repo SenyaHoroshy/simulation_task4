@@ -142,15 +142,15 @@ class SettingsPanel(QWidget):
     
     def update_parameters_display(self):
         if self.current_task in ["1a", "4.1a"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\n(Используйте R или колесико мыши)"
         elif self.current_task in ["1b", "4.1b"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\nt: {self.current_variables['t']}\n(Используйте R или колесико мыши)"
         elif self.current_task in ["1c", "4.1c"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\n(Используйте R или колесико мыши)"
         elif self.current_task in ["2a", "4.2a"]:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\n(Используйте колесико мыши)"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\ns: {self.current_variables['s']}\n(Используйте R или колесико мыши)"
         else:
-            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}"
+            parameters_text = f"Пункт: {self.current_task}\nn: {self.current_grid_size}\n(Используйте R или колесико мыши)"
         
         self.parameters_label.setText(parameters_text)
     

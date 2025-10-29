@@ -791,16 +791,26 @@ class GridWidget(QWidget):
     
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_R:
-            self.rotate_figure()
+            if self.current_task in ["2a", "4.2a"]:
+                self.change_figure_type(1)
+            else:
+                self.rotate_figure()
         else:
             super().keyPressEvent(event)
-    
+
     def wheelEvent(self, event):
         if self.current_task in ["2a", "4.2a"]:
             delta = 1 if event.angleDelta().y() > 0 else -1
             self.change_figure_type(delta)
         else:
-            super().wheelEvent(event)
+            delta = 1 if event.angleDelta().y() > 0 else -1
+            for _ in range(abs(delta)):
+                if delta > 0:
+                    self.rotate_figure()
+                else:
+                    self.current_rotation = (self.current_rotation - 1) % 4
+                    self.update_current_figure()
+                    self.update()
         
     def paintEvent(self, event):
         painter = QPainter(self)
