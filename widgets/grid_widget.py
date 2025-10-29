@@ -206,32 +206,104 @@ class GridWidget(QWidget):
         return False
     
     def count_common_points(self, figure1, figure2):
-        common_points = 0
+        figure1_points = self.get_figure_boundary_points(figure1)
+
+        figure2_points = self.get_figure_boundary_points(figure2)
         
-        for cell1 in figure1:
-            for cell2 in figure2:
-                if self.are_cells_touching(cell1, cell2):
-                    common_points += 1
+        common_points = figure1_points.intersection(figure2_points)
         
-        return common_points
+        return len(common_points)
+
+    def get_figure_boundary_points(self, figure):
+        boundary_points = set()
+        
+        for (row, col), cell_type in figure:
+            if self.current_task in ["2a", "4.2a"]:
+                points = self.get_triangle_boundary_points(row, col, cell_type)
+                boundary_points.update(points)
+            else:
+                points = self.get_cell_boundary_points(row, col)
+                boundary_points.update(points)
+        
+        return boundary_points
+
+    def get_cell_boundary_points(self, row, col):
+        points = set()
+        
+        vertices = [
+            (row, col, 'vertex'),
+            (row, col + 1, 'vertex'),
+            (row + 1, col, 'vertex'),
+            (row + 1, col + 1, 'vertex')
+        ]
+        points.update(vertices)
+        
+        edges = [
+            (row, col + 0.5, 'edge'),
+            (row + 1, col + 0.5, 'edge'),
+            (row + 0.5, col, 'edge'),
+            (row + 0.5, col + 1, 'edge')
+        ]
+        points.update(edges)
+        
+        return points
+
+    def get_triangle_boundary_points(self, row, col, triangle_type):
+        points = set()
+        
+        if triangle_type == 0:
+            return self.get_cell_boundary_points(row, col)
+        
+        x1, y1 = col, row
+        x2, y2 = col + 1, row
+        x3, y3 = col, row + 1
+        x4, y4 = col + 1, row + 1
+        
+        if triangle_type == 1:
+            vertices = [(x1, y1), (x2, y2), (x1, y3)]
+            edges = [
+                ((x1 + x2)/2, y1, 'edge'),
+                (x1, (y1 + y3)/2, 'edge'),
+                ((x1 + x2)/2, (y1 + y3)/2, 'edge')
+            ]
+        elif triangle_type == 2:
+            vertices = [(x1, y1), (x2, y2), (x2, y3)]
+            edges = [
+                ((x1 + x2)/2, y1, 'edge'),
+                (x2, (y1 + y3)/2, 'edge'),
+                ((x1 + x2)/2, (y1 + y3)/2, 'edge')
+            ]
+        elif triangle_type == 3:
+            vertices = [(x1, y1), (x1, y3), (x2, y3)]
+            edges = [
+                (x1, (y1 + y3)/2, 'edge'),
+                ((x1 + x2)/2, y3, 'edge'),
+                ((x1 + x2)/2, (y1 + y3)/2, 'edge')
+            ]
+        elif triangle_type == 4:
+            vertices = [(x2, y2), (x1, y3), (x2, y3)]
+            edges = [
+                (x2, (y1 + y3)/2, 'edge'),
+                ((x1 + x2)/2, y3, 'edge'),
+                ((x1 + x2)/2, (y1 + y3)/2, 'edge')
+            ]
+        else:
+            return set()
+        
+        for x, y in vertices:
+            points.add((y, x, 'vertex'))
+        
+        for x, y, edge_type in edges:
+            points.add((y, x, edge_type))
+        
+        return points
 
     def are_cells_touching(self, cell1, cell2):
-        (row1, col1), type1 = cell1
-        (row2, col2), type2 = cell2
+        figure1_points = self.get_figure_boundary_points([cell1])
+        figure2_points = self.get_figure_boundary_points([cell2])
         
-        if row1 == row2 and col1 == col2:
-            return True
-        
-        row_diff = abs(row1 - row2)
-        col_diff = abs(col1 - col2)
-        
-        if (row_diff == 1 and col_diff == 0) or (row_diff == 0 and col_diff == 1):
-            return True
-        
-        if row_diff == 1 and col_diff == 1:
-            return True
-        
-        return False
+        common_points = figure1_points.intersection(figure2_points)
+        return len(common_points) > 0
 
     def check_figures_touching(self):
         violating_figures = []
@@ -954,8 +1026,6 @@ class GridWidget(QWidget):
         else:
             self.hover_cell = None
             self.coords_label.hide()
-        
-        print(self.placed_figures)
 
         self.update()
     
