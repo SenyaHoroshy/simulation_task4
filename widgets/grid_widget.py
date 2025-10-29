@@ -285,6 +285,26 @@ class GridWidget(QWidget):
                         if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
                             forbidden_cells.append(((new_row, new_col), forbidden_type))
 
+                    new_row, new_col = row - 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 6))
+                        forbidden_cells.append(((new_row, new_col), 7))
+
+                    new_row, new_col = row - 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 7))
+                        forbidden_cells.append(((new_row, new_col), 8))
+
+                    new_row, new_col = row + 1, col - 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 6))
+
+                    new_row, new_col = row + 1, col + 1
+                    if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
+                        forbidden_cells.append(((new_row, new_col), 5))
+                        forbidden_cells.append(((new_row, new_col), 8))
+                        
                 elif cell_type == 1:
                     for drow, dcol in [(-1, 0), (0, -1)]:
                         new_row, new_col = row + drow, col + dcol
@@ -861,6 +881,8 @@ class GridWidget(QWidget):
             self.hover_cell = None
             self.coords_label.hide()
         
+        print(self.placed_figures)
+
         self.update()
     
     def mousePressEvent(self, event: QMouseEvent):
