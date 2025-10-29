@@ -205,6 +205,59 @@ class GridWidget(QWidget):
 
         return False
     
+    def count_common_points(self, figure1, figure2):
+        common_points = 0
+        
+        for cell1 in figure1:
+            for cell2 in figure2:
+                if self.are_cells_touching(cell1, cell2):
+                    common_points += 1
+        
+        return common_points
+
+    def are_cells_touching(self, cell1, cell2):
+        (row1, col1), type1 = cell1
+        (row2, col2), type2 = cell2
+        
+        if row1 == row2 and col1 == col2:
+            return True
+        
+        row_diff = abs(row1 - row2)
+        col_diff = abs(col1 - col2)
+        
+        if (row_diff == 1 and col_diff == 0) or (row_diff == 0 and col_diff == 1):
+            return True
+        
+        if row_diff == 1 and col_diff == 1:
+            return True
+        
+        return False
+
+    def check_figures_touching(self):
+        violating_figures = []
+        
+        if self.current_task == "2a":
+            for i in range(len(self.placed_figures)):
+                for j in range(i + 1, len(self.placed_figures)):
+                    common_points = self.count_common_points(
+                        self.placed_figures[i], 
+                        self.placed_figures[j]
+                    )
+                    if common_points > 0:
+                        violating_figures.extend([i, j])
+        
+        elif self.current_task == "4.2a":
+            for i in range(len(self.placed_figures)):
+                for j in range(i + 1, len(self.placed_figures)):
+                    common_points = self.count_common_points(
+                        self.placed_figures[i], 
+                        self.placed_figures[j]
+                    )
+                    if common_points > 1:
+                        violating_figures.extend([i, j])
+        
+        return list(set(violating_figures))
+
     def find_connected_components(self):
         if not self.placed_cells:
             return []
@@ -304,7 +357,7 @@ class GridWidget(QWidget):
                     if 0 <= new_row < self.grid_size and 0 <= new_col < self.grid_size:
                         forbidden_cells.append(((new_row, new_col), 5))
                         forbidden_cells.append(((new_row, new_col), 8))
-                        
+
                 elif cell_type == 1:
                     for drow, dcol in [(-1, 0), (0, -1)]:
                         new_row, new_col = row + drow, col + dcol
@@ -596,6 +649,9 @@ class GridWidget(QWidget):
                 self.placed_cells.add(((row, col), cell_type))
                 self.update_figures_from_components()
                 
+                if self.current_task in ["2a", "4.2a"]:
+                    self.check_figures_touching()
+                
                 self.update_figures_count()
                 self.update()
                 return True
@@ -607,6 +663,9 @@ class GridWidget(QWidget):
             
             forbidden_cells = self.get_forbidden_zone_cells(cells)
             self.forbidden_zones.extend(forbidden_cells)
+            
+            if self.current_task in ["2a", "4.2a"]:
+                self.check_figures_touching()
             
             self.update_figures_count()
             self.update()
@@ -625,6 +684,9 @@ class GridWidget(QWidget):
                 self.placed_cells.remove(cell_to_remove)
                 self.update_figures_from_components()
                 
+                if self.current_task in ["2a", "4.2a"]:
+                    self.check_figures_touching()
+                
                 self.update_figures_count()
                 self.update()
                 return True
@@ -636,6 +698,9 @@ class GridWidget(QWidget):
                     removed_figure = self.placed_figures.pop(i)
                     
                     self.update_all_forbidden_zones()
+                    
+                    if self.current_task in ["2a", "4.2a"]:
+                        self.check_figures_touching()
                     
                     self.update_figures_count()
                     self.update()
@@ -678,6 +743,10 @@ class GridWidget(QWidget):
         if self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"]:
             self.draw_grid(painter, width, height, cell_width, cell_height)
             
+            violating_figures_indices = []
+            if self.current_task in ["2a", "4.2a"]:
+                violating_figures_indices = self.check_figures_touching()
+
             for zone_coord, zone_type in self.forbidden_zones:
                 row, col = zone_coord
                 x = col * cell_width
@@ -703,7 +772,12 @@ class GridWidget(QWidget):
                     painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
                                    QBrush(color))
             
-            for figure in self.placed_figures:
+            for i, figure in enumerate(self.placed_figures):
+                figure_color = QColor(0, 0, 255, 180)
+
+                if i in violating_figures_indices:
+                    figure_color = QColor(255, 255, 0, 180)
+                
                 for coord, cell_type in figure:
                     row, col = coord
                     x = col * cell_width
@@ -711,10 +785,10 @@ class GridWidget(QWidget):
                     
                     if self.current_task in ["2a", "4.2a"]:
                         self.draw_triangle(painter, x, y, cell_width, cell_height, cell_type, 
-                                         QColor(0, 0, 255, 180))
+                                        figure_color)
                     else:
                         painter.fillRect(int(x), int(y), int(cell_width), int(cell_height), 
-                                       QBrush(QColor(0, 0, 255, 180)))
+                                    QBrush(figure_color))
         
         if (self.hover_cell is not None and 
             self.current_task in ["1a", "4.1a", "1b", "4.1b", "1c", "4.1c", "2a", "4.2a"] and
